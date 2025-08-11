@@ -194,6 +194,32 @@ module "monitoring" {
   tags = var.default_tags
 }
 
+# Security Hub (Phase 2)
+module "security_hub_org" {
+  source = "../../modules/security-hub"
+
+  enable_default_standards = true
+  standards_arns = [
+    "arn:aws:securityhub:${data.aws_region.current.name}::standards/aws-foundational-security-best-practices/v/1.0.0",
+    "arn:aws:securityhub:${data.aws_region.current.name}::standards/cis-aws-foundations-benchmark/v/1.2.0"
+  ]
+
+  member_accounts = {}
+
+  depends_on = [module.aws_organizations]
+}
+
+# AWS Config Organization Aggregator (Phase 2)
+module "aws_config_org" {
+  source      = "../../modules/aws-config-org"
+  all_regions = true
+}
+
+# Organization CloudTrail (Phase 2)
+module "cloudtrail_org" {
+  source = "../../modules/cloudtrail-org"
+}
+
 # Data sources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

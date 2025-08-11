@@ -142,6 +142,32 @@ output "monitoring_topics" {
   }
 }
 
+# Phase 2 Outputs
+output "security_hub_admin_account" {
+  description = "Security Hub admin account ID"
+  value       = module.security_hub_org.securityhub_admin_account_id
+}
+
+output "security_hub_standards" {
+  description = "Security Hub standards enabled"
+  value       = module.security_hub_org.standards_subscribed
+}
+
+output "config_org_aggregator" {
+  description = "AWS Config organization aggregator name"
+  value       = module.aws_config_org.aggregator_name
+}
+
+output "org_cloudtrail_trail" {
+  description = "Organization CloudTrail trail name"
+  value       = module.cloudtrail_org.trail_name
+}
+
+output "org_cloudtrail_bucket" {
+  description = "Organization CloudTrail S3 bucket"
+  value       = module.cloudtrail_org.trail_bucket
+}
+
 # Phase 1 Summary
 output "phase_1_summary" {
   description = "Summary of Phase 1 implementation"

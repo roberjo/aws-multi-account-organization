@@ -2,39 +2,17 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "DenyRootUserAccess",
+      "Sid": "DenyActionsForRootUser",
       "Effect": "Deny",
-      "Principal": {
-        "AWS": "*"
-      },
       "Action": "*",
       "Resource": "*",
       "Condition": {
-        "StringEquals": {
-          "aws:PrincipalType": "Root"
-        }
-      }
-    },
-    {
-      "Sid": "AllowRootUserForAccountManagement",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "*"
-      },
-      "Action": [
-        "organizations:*",
-        "account:*",
-        "billing:*",
-        "payments:*",
-        "aws-portal:*",
-        "support:*"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "aws:PrincipalType": "Root"
+        "ArnLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:root"
         }
       }
     }
   ]
 }
+
+

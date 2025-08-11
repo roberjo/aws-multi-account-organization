@@ -32,7 +32,7 @@ resource "aws_config_config_rule" "custom_guardrails" {
 
   input_parameters = each.value.input_parameters
 
-  depends_on = [aws_config_configuration_recorder.recorder]
+  depends_on = [aws_config_configuration_recorder.recorder, aws_config_delivery_channel.channel]
 
   tags = merge(var.tags, {
     Name        = each.key
@@ -62,10 +62,15 @@ resource "aws_config_delivery_channel" "channel" {
   name           = "guardrails-delivery-channel"
   s3_bucket_name = aws_s3_bucket.config_bucket.bucket
 
-  tags = merge(var.tags, {
-    Name    = "Guardrails Delivery Channel"
-    Purpose = "Configuration delivery for guardrails"
-  })
+  # delivery_frequency could be set via var if desired
+}
+
+# Ensure recorder starts after delivery channel exists
+resource "aws_config_configuration_recorder_status" "recorder_status" {
+  is_enabled = true
+  name       = aws_config_configuration_recorder.recorder.name
+
+  depends_on = [aws_config_delivery_channel.channel]
 }
 
 # S3 Bucket for Config
@@ -113,45 +118,45 @@ resource "aws_s3_bucket_policy" "config_bucket" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AWSConfigBucketPermissionsCheck"
-        Effect = "Allow"
+        Sid    = "AWSConfigBucketPermissionsCheck",
+        Effect = "Allow",
         Principal = {
           Service = "config.amazonaws.com"
-        }
-        Action   = "s3:GetBucketAcl"
-        Resource = aws_s3_bucket.config_bucket.arn
+        },
+        Action   = "s3:GetBucketAcl",
+        Resource = aws_s3_bucket.config_bucket.arn,
         Condition = {
           StringEquals = {
-            "AWS:SourceAccount" = data.aws_caller_identity.current.account_id
+            "aws:SourceAccount" : data.aws_caller_identity.current.account_id
           }
         }
       },
       {
-        Sid    = "AWSConfigBucketExistenceCheck"
-        Effect = "Allow"
+        Sid    = "AWSConfigBucketExistenceCheck",
+        Effect = "Allow",
         Principal = {
           Service = "config.amazonaws.com"
-        }
-        Action   = "s3:ListBucket"
-        Resource = aws_s3_bucket.config_bucket.arn
+        },
+        Action   = "s3:ListBucket",
+        Resource = aws_s3_bucket.config_bucket.arn,
         Condition = {
           StringEquals = {
-            "AWS:SourceAccount" = data.aws_caller_identity.current.account_id
+            "aws:SourceAccount" : data.aws_caller_identity.current.account_id
           }
         }
       },
       {
-        Sid    = "AWSConfigBucketDelivery"
-        Effect = "Allow"
+        Sid    = "AWSConfigBucketDelivery",
+        Effect = "Allow",
         Principal = {
           Service = "config.amazonaws.com"
-        }
-        Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.config_bucket.arn}/*"
+        },
+        Action   = "s3:PutObject",
+        Resource = "${aws_s3_bucket.config_bucket.arn}/*",
         Condition = {
           StringEquals = {
-            "s3:x-amz-acl" = "bucket-owner-full-control"
-            "AWS:SourceAccount" = data.aws_caller_identity.current.account_id
+            "s3:x-amz-acl"     : "bucket-owner-full-control",
+            "aws:SourceAccount": data.aws_caller_identity.current.account_id
           }
         }
       }
@@ -164,11 +169,11 @@ resource "aws_iam_role" "config_role" {
   name = "AWSConfigRole-Guardrails"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
         Principal = {
           Service = "config.amazonaws.com"
         }
@@ -177,7 +182,7 @@ resource "aws_iam_role" "config_role" {
   })
 
   tags = merge(var.tags, {
-    Name    = "Config Guardrails Role"
+    Name    = "Config Guardrails Role",
     Purpose = "Service role for AWS Config guardrails"
   })
 }
@@ -194,7 +199,7 @@ resource "aws_cloudwatch_log_group" "guardrail_violations" {
   retention_in_days = var.log_retention_days
 
   tags = merge(var.tags, {
-    Name    = "Guardrail Violations"
+    Name    = "Guardrail Violations",
     Purpose = "Logging for guardrail violations"
   })
 }
@@ -205,15 +210,15 @@ resource "aws_cloudwatch_event_rule" "config_compliance" {
   description = "Capture Config compliance change events"
 
   event_pattern = jsonencode({
-    source      = ["aws.config"]
-    detail-type = ["Config Rules Compliance Change"]
+    source      = ["aws.config"],
+    detail-type = ["Config Rules Compliance Change"],
     detail = {
       messageType = ["ComplianceChangeNotification"]
     }
   })
 
   tags = merge(var.tags, {
-    Name    = "Config Compliance Events"
+    Name    = "Config Compliance Events",
     Purpose = "Monitoring Config rule compliance changes"
   })
 }
@@ -231,7 +236,7 @@ resource "aws_sns_topic" "guardrail_notifications" {
   name  = "guardrail-violations"
 
   tags = merge(var.tags, {
-    Name    = "Guardrail Notifications"
+    Name    = "Guardrail Notifications",
     Purpose = "Notifications for guardrail violations"
   })
 }
@@ -250,14 +255,14 @@ resource "aws_sns_topic_policy" "guardrail_notifications" {
   arn   = aws_sns_topic.guardrail_notifications[0].arn
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Principal = {
           Service = "events.amazonaws.com"
-        }
-        Action = "sns:Publish"
+        },
+        Action = "sns:Publish",
         Resource = aws_sns_topic.guardrail_notifications[0].arn
       }
     ]
@@ -268,22 +273,22 @@ resource "aws_sns_topic_policy" "guardrail_notifications" {
 resource "aws_lambda_function" "guardrail_remediation" {
   count = var.enable_auto_remediation ? 1 : 0
 
-  filename         = "guardrail_remediation.zip"
-  function_name    = "guardrail-auto-remediation"
-  role            = aws_iam_role.lambda_role[0].arn
-  handler         = "index.lambda_handler"
-  runtime         = "python3.9"
-  timeout         = 300
+  filename      = "guardrail_remediation.zip"
+  function_name = "guardrail-auto-remediation"
+  role          = aws_iam_role.lambda_role[0].arn
+  handler       = "index.lambda_handler"
+  runtime       = "python3.9"
+  timeout       = 300
 
   environment {
     variables = {
-      LOG_LEVEL = "INFO"
+      LOG_LEVEL     = "INFO",
       SNS_TOPIC_ARN = var.enable_notifications ? aws_sns_topic.guardrail_notifications[0].arn : ""
     }
   }
 
   tags = merge(var.tags, {
-    Name    = "Guardrail Auto Remediation"
+    Name    = "Guardrail Auto Remediation",
     Purpose = "Automated remediation for guardrail violations"
   })
 }
@@ -294,11 +299,11 @@ resource "aws_iam_role" "lambda_role" {
   name  = "GuardrailRemediationRole"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
         Principal = {
           Service = "lambda.amazonaws.com"
         }
@@ -307,7 +312,7 @@ resource "aws_iam_role" "lambda_role" {
   })
 
   tags = merge(var.tags, {
-    Name    = "Guardrail Remediation Role"
+    Name    = "Guardrail Remediation Role",
     Purpose = "Execution role for guardrail remediation Lambda"
   })
 }
@@ -319,30 +324,30 @@ resource "aws_iam_role_policy" "lambda_remediation" {
   role  = aws_iam_role.lambda_role[0].id
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
-        ]
+        ],
         Resource = "arn:aws:logs:*:*:*"
       },
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "config:GetComplianceDetailsByConfigRule",
           "config:GetComplianceDetailsByResource"
-        ]
+        ],
         Resource = "*"
       },
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Action = [
           "sns:Publish"
-        ]
+        ],
         Resource = var.enable_notifications ? aws_sns_topic.guardrail_notifications[0].arn : "*"
       }
     ]
