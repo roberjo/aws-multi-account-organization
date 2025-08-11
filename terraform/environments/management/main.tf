@@ -169,6 +169,31 @@ module "guardrails" {
   tags = var.default_tags
 }
 
+# Monitoring Module
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  region                        = var.region
+  log_retention_days           = var.cloudtrail_retention_days
+  critical_notification_emails = var.critical_notification_emails
+  security_notification_emails = var.security_notification_emails
+  compliance_notification_emails = var.compliance_notification_emails
+  operational_notification_emails = var.operational_notification_emails
+  
+  enable_detailed_monitoring = true
+  enable_cost_monitoring    = true
+  monthly_budget_limit      = var.monthly_budget_limit
+  
+  alarm_thresholds = {
+    high_severity_findings     = 5
+    critical_severity_findings = 0
+    config_violations         = 10
+    guardduty_findings        = 0
+  }
+
+  tags = var.default_tags
+}
+
 # Data sources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

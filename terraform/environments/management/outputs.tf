@@ -116,6 +116,32 @@ output "enabled_config_rules_count" {
   value       = module.guardrails.enabled_config_rules_count
 }
 
+# Monitoring Information
+output "monitoring_summary" {
+  description = "Summary of monitoring configuration"
+  value       = module.monitoring.monitoring_summary
+}
+
+output "organization_dashboard_url" {
+  description = "URL for the organization overview dashboard"
+  value       = module.monitoring.organization_dashboard_url
+}
+
+output "security_dashboard_url" {
+  description = "URL for the security monitoring dashboard"
+  value       = module.monitoring.security_dashboard_url
+}
+
+output "monitoring_topics" {
+  description = "SNS topics for different alert levels"
+  value = {
+    critical_alerts     = module.monitoring.critical_alerts_topic_arn
+    security_alerts     = module.monitoring.security_alerts_topic_arn
+    compliance_alerts   = module.monitoring.compliance_alerts_topic_arn
+    operational_alerts  = module.monitoring.operational_alerts_topic_arn
+  }
+}
+
 # Phase 1 Summary
 output "phase_1_summary" {
   description = "Summary of Phase 1 implementation"
@@ -125,10 +151,15 @@ output "phase_1_summary" {
     service_control_policies = length(module.aws_organizations.service_control_policies)
     tag_policies            = length(module.aws_organizations.tag_policies)
     config_rules_enabled    = module.guardrails.enabled_config_rules_count
+    monitoring_dashboards   = 2
+    cloudwatch_alarms       = 4
+    sns_topics_created      = 6
     cloudtrail_bucket       = aws_s3_bucket.cloudtrail_logs.bucket
     config_bucket           = module.guardrails.config_bucket_name
     notification_topic      = aws_sns_topic.organization_notifications.name
     guardrail_notifications = module.guardrails.notification_topic_arn
-    phase_status           = "Foundation with Guardrails Complete"
+    organization_dashboard  = module.monitoring.organization_dashboard_url
+    security_dashboard      = module.monitoring.security_dashboard_url
+    phase_status           = "Phase 1 Complete - Foundation, Guardrails, and Monitoring"
   }
 }

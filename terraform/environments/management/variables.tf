@@ -126,3 +126,70 @@ variable "enable_auto_remediation" {
   type        = bool
   default     = false
 }
+
+variable "critical_notification_emails" {
+  description = "List of email addresses for critical alerts"
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition = alltrue([
+      for email in var.critical_notification_emails : 
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
+  }
+}
+
+variable "security_notification_emails" {
+  description = "List of email addresses for security alerts"
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition = alltrue([
+      for email in var.security_notification_emails : 
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
+  }
+}
+
+variable "compliance_notification_emails" {
+  description = "List of email addresses for compliance alerts"
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition = alltrue([
+      for email in var.compliance_notification_emails : 
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
+  }
+}
+
+variable "operational_notification_emails" {
+  description = "List of email addresses for operational alerts"
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition = alltrue([
+      for email in var.operational_notification_emails : 
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
+  }
+}
+
+variable "monthly_budget_limit" {
+  description = "Monthly budget limit in USD for cost monitoring"
+  type        = number
+  default     = 1000
+  
+  validation {
+    condition     = var.monthly_budget_limit > 0
+    error_message = "Monthly budget limit must be greater than 0."
+  }
+}
