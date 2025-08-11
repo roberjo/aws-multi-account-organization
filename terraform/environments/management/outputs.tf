@@ -95,16 +95,40 @@ output "current_region" {
   value       = data.aws_region.current.name
 }
 
+# Guardrails Information
+output "guardrails_summary" {
+  description = "Summary of guardrails configuration"
+  value       = module.guardrails.guardrails_summary
+}
+
+output "config_bucket_name" {
+  description = "Name of the AWS Config S3 bucket"
+  value       = module.guardrails.config_bucket_name
+}
+
+output "guardrail_notification_topic" {
+  description = "ARN of the guardrail notifications SNS topic"
+  value       = module.guardrails.notification_topic_arn
+}
+
+output "enabled_config_rules_count" {
+  description = "Number of enabled AWS Config rules"
+  value       = module.guardrails.enabled_config_rules_count
+}
+
 # Phase 1 Summary
 output "phase_1_summary" {
   description = "Summary of Phase 1 implementation"
   value = {
-    organization_created    = true
-    organizational_units   = length(module.aws_organizations.organizational_units)
+    organization_created     = true
+    organizational_units     = length(module.aws_organizations.organizational_units)
     service_control_policies = length(module.aws_organizations.service_control_policies)
-    tag_policies           = length(module.aws_organizations.tag_policies)
-    cloudtrail_bucket      = aws_s3_bucket.cloudtrail_logs.bucket
-    notification_topic     = aws_sns_topic.organization_notifications.name
-    phase_status          = "Foundation Complete"
+    tag_policies            = length(module.aws_organizations.tag_policies)
+    config_rules_enabled    = module.guardrails.enabled_config_rules_count
+    cloudtrail_bucket       = aws_s3_bucket.cloudtrail_logs.bucket
+    config_bucket           = module.guardrails.config_bucket_name
+    notification_topic      = aws_sns_topic.organization_notifications.name
+    guardrail_notifications = module.guardrails.notification_topic_arn
+    phase_status           = "Foundation with Guardrails Complete"
   }
 }

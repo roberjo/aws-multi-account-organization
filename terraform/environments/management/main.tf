@@ -149,6 +149,26 @@ resource "aws_sns_topic_policy" "organization_notifications" {
   })
 }
 
+# Guardrails Module
+module "guardrails" {
+  source = "../../modules/guardrails"
+
+  enable_notifications    = true
+  notification_endpoints  = var.notification_endpoints
+  enable_auto_remediation = var.enable_auto_remediation
+  
+  target_organizational_units = [
+    "Security OU",
+    "Infrastructure OU", 
+    "Application OU"
+  ]
+  
+  compliance_frameworks = ["SOC2", "PCI-DSS", "CIS"]
+  log_retention_days   = var.cloudtrail_retention_days
+
+  tags = var.default_tags
+}
+
 # Data sources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

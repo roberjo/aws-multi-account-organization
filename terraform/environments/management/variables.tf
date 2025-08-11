@@ -106,3 +106,23 @@ variable "notification_email" {
     error_message = "Notification email must be empty or a valid email address."
   }
 }
+
+variable "notification_endpoints" {
+  description = "List of email addresses for guardrail notifications"
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition = alltrue([
+      for email in var.notification_endpoints : 
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All notification endpoints must be valid email addresses."
+  }
+}
+
+variable "enable_auto_remediation" {
+  description = "Enable automated remediation for guardrail violations"
+  type        = bool
+  default     = false
+}
